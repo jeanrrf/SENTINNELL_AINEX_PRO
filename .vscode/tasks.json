@@ -1,0 +1,158 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Start Backend Dev",
+			"type": "shell",
+			"command": "npm run dev",
+			"options": {
+				"cwd": "${workspaceFolder}/backend"
+			},
+			"isBackground": true,
+			"problemMatcher": {
+				"owner": "custom",
+				"pattern": {
+					"regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+					"file": 1,
+					"line": 2,
+					"column": 3,
+					"severity": 4,
+					"message": 5
+				},
+				"background": {
+					"activeOnStart": true,
+					"beginsPattern": "^\\[nodemon\\] starting",
+					"endsPattern": "^Backend AINEX rodando|^\\[nodemon\\] app crashed"
+				}
+			},
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": false,
+				"group": "dev"
+			},
+			"runOptions": {
+				"instanceLimit": 1
+			}
+		},
+		{
+			"label": "Start Frontend Dev",
+			"type": "shell",
+			"command": "npm run dev",
+			"options": {
+				"cwd": "${workspaceFolder}/frontend"
+			},
+			"isBackground": true,
+			"problemMatcher": {
+				"owner": "typescript",
+				"source": "ts",
+				"fileLocation": "relative",
+				"pattern": {
+					"regexp": "^([^\\s].*)\\((\\d+),(\\d+)\\):\\s+(error|warning|info)\\s+(TS\\d+)\\s*:\\s*(.*)$",
+					"file": 1,
+					"line": 2,
+					"column": 3,
+					"severity": 4,
+					"code": 5,
+					"message": 6
+				},
+				"background": {
+					"activeOnStart": true,
+					"beginsPattern": "^\\s*vite",
+					"endsPattern": "ready in|Network:"
+				}
+			},
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": false,
+				"group": "dev"
+			},
+			"runOptions": {
+				"instanceLimit": 1
+			}
+		},
+		{
+			"label": "Start All Dev Servers",
+			"dependsOn": [
+				"Start Backend Dev",
+				"Start Frontend Dev"
+			],
+			"dependsOrder": "parallel",
+			"problemMatcher": [],
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": false
+			}
+		},
+		{
+			"label": "Stop All Dev Servers",
+			"type": "shell",
+			"command": "taskkill /F /IM node.exe 2>nul || echo No Node processes to kill",
+			"windows": {
+				"command": "taskkill /F /IM node.exe 2>nul || echo No Node processes to kill"
+			},
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": false
+			}
+		},
+		{
+			"label": "Stop All Dev Servers",
+			"type": "shell",
+			"command": "taskkill /F /IM node.exe 2>nul || echo No Node processes to kill",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Start Backend Dev",
+			"type": "shell",
+			"command": "npm run dev",
+			"isBackground": true,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Start Frontend Dev",
+			"type": "shell",
+			"command": "npm run dev",
+			"isBackground": true,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Stop All Dev Servers",
+			"type": "shell",
+			"command": "taskkill /F /IM node.exe 2>$null; Write-Output 'Stopped Node processes'",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Start Backend Dev",
+			"type": "shell",
+			"command": "npm run dev",
+			"isBackground": true
+		},
+		{
+			"label": "Start Frontend Dev",
+			"type": "shell",
+			"command": "npm run dev",
+			"isBackground": true
+		}
+	]
+}

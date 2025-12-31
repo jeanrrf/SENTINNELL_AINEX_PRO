@@ -1,0 +1,30 @@
+{
+    "name": "sentinnell-pro-backend",
+    "version": "4.0.0",
+    "description": "Backend otimizado para a plataforma SENTINNELL PRO",
+    "main": "src/server.js",
+    "scripts": {
+        "start": "node src/server.js",
+        "dev": "nodemon src/server.js",
+    "kill:port": "npx kill-port 3001",
+    "format:codebase": "node ../scripts/format-codebase.js"
+    },
+    "dependencies": {
+        "express": "^4.19.2",
+        "cors": "^2.8.5",
+        "compression": "^1.7.4",
+        "dotenv": "^16.4.5",
+        "sqlite3": "^5.1.7",
+        "openai": "^4.52.7",
+        "colorette": "^2.0.20",
+        "js-yaml": "^4.1.0",
+        "officeparser": "^5.0.0",
+        "@grpc/grpc-js": "^1.12.6",
+        "@grpc/proto-loader": "^0.7.15",
+        "ffmpeg-static": "^5.2.0"
+    },
+    "devDependencies": {
+        "nodemon": "^3.1.4"
+    }
+}
+
