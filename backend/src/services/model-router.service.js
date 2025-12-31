@@ -6,6 +6,7 @@ const nvidia = require('./nvidia.service');
 const registry = require('./capability-registry.service');
 const { isDocumentAttachment, extractDocumentText } = require('./document.service');
 const riva = require('./riva.service');
+const logger = require('../utils/logger');
 
 const MAX_DOC_CHARS = 12000;
 const MAX_VISION_CHARS = 4000;
@@ -121,23 +122,24 @@ async function runVisionAnalysis(images, modelId, ocrOnly = false) {
 
 async function runDocParse(text, modelId) {
     if (!text || !modelId) return '';
+    const docText = truncateText(text, MAX_DOC_CHARS);
     const prompt = [
         'You are a document parser.',
         'Extract a concise structure with title, sections, and key facts.',
         'Return JSON with keys: title, sections (array), key_facts (array).',
-        'Return ONLY valid JSON.'
-    ].join(' ');
+        'Return ONLY valid JSON.',
+        '',
+        'DOCUMENT:',
+        docText
+    ].join('\n');
 
     const response = await nvidia.chatCompletion(
-        [
-            { role: 'system', content: prompt },
-            { role: 'user', content: truncateText(text, MAX_DOC_CHARS) }
-        ],
+        [{ role: 'user', content: prompt }],
         modelId,
         { stream: false, temperature: 0.1, maxTokens: 1400 }
     );
 
-    return response?.choices?.[0]?.message?.content || '';
+    return response?.choices?.[0]?.message?.content?.trim() || '';
 }
 
 async function buildAttachmentContext({ attachments, catalog, extraParts = [] }) {
@@ -158,18 +160,27 @@ async function buildAttachmentContext({ attachments, catalog, extraParts = [] })
             });
         }
 
-        const docModel = resolveModelId(
-            config.router.docParseModelId,
-            catalog,
-            model => model.isParse
-        );
+        const docModel = config.router.enableDocParse
+            ? resolveModelId(config.router.docParseModelId, catalog, model => model.isParse)
+            : null;
 
         if (docModel) {
             usedModels.docParse = docModel;
             for (const doc of parsedDocs) {
                 if (!doc.text) continue;
-                const parsed = await runDocParse(doc.text, docModel);
-                contextParts.push(`DOC_PARSE:${doc.name}\n${truncateText(parsed, MAX_DOC_CHARS)}`);
+                let parsed = '';
+                try {
+                    parsed = await runDocParse(doc.text, docModel);
+                } catch (error) {
+                    logger.warn(
+                        `Falha ao parsear documento "${doc.name}" com ${docModel}: ${error.message || error}`
+                    );
+                }
+                if (parsed) {
+                    contextParts.push(`DOC_PARSE:${doc.name}\n${truncateText(parsed, MAX_DOC_CHARS)}`);
+                } else {
+                    contextParts.push(`DOC_TEXT:${doc.name}\n${doc.text}`);
+                }
             }
         } else {
             for (const doc of parsedDocs) {
@@ -278,13 +289,21 @@ async function routeTurn({ messages = [], model, attachments = [] }) {
 
     const choice = normalizeModelChoice(model);
     let chatModel = choice.modelId || config.router.defaultTextModel;
+    let routerReason = choice.mode === 'manual' ? 'manual_text' : 'auto_text';
+
+    if (choice.mode === 'manual' && choice.modelId && registry.isDeniedModel(choice.modelId)) {
+        chatModel = config.router.defaultTextModel;
+        routerReason = 'manual_denied';
+    }
 
     if (!catalog.byId.has(chatModel)) {
         const fallback = resolveModelId(config.router.defaultTextModel, catalog, m => m.isChat);
         chatModel = fallback || chatModel;
+        if (choice.mode === 'manual' && routerReason === 'manual_text') {
+            routerReason = 'manual_fallback';
+        }
     }
 
-    let routerReason = choice.mode === 'manual' ? 'manual_text' : 'auto_text';
     let preparedMessages = messages;
     const extraParts = [];
     const usedModels = {};
@@ -371,12 +390,15 @@ async function routeTurn({ messages = [], model, attachments = [] }) {
         timestamp: Date.now()
     };
 
+    const isDefaultModel = chatModel === config.router.defaultTextModel;
+
     return {
         trace,
         chatModel,
         fallbackModels,
         contextMessage,
-        preparedMessages
+        preparedMessages,
+        isDefaultModel
     };
 }
 
@@ -384,4 +406,3 @@ module.exports = {
     routeTurn,
     createChatStream
 };
-

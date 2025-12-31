@@ -15,6 +15,11 @@ interface ChatMessageProps {
   isLast?: boolean;
   model?: string;
   attachments?: ChatAttachment[];
+  modelInfo?: {
+    modelId: string;
+    isDefaultModel: boolean;
+    routerReason: string;
+  };
 }
 const formatInline = (text: string) => {
   const parts: React.ReactNode[] = [];
@@ -97,7 +102,7 @@ const formatBlocks = (text: string) => {
   flushList(lines.length);
   return blocks;
 };
-export const ChatMessage: React.FC<ChatMessageProps> = ({ role, content, isLast, attachments }) => {
+export const ChatMessage: React.FC<ChatMessageProps> = ({ role, content, isLast, attachments, modelInfo }) => {
   const isAssistant = role === 'assistant';
   let thinkingContent = '';
   let finalContent = content;
@@ -144,11 +149,10 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ role, content, isLast,
     <div className={`flex ${role === 'user' ? 'justify-end' : 'justify-start'} animate-in`}>
       <div className={`flex gap-4 max-w-[85%] ${role === 'user' ? 'flex-row-reverse' : ''}`}>
         <div
-          className={`w-10 h-10 rounded-xl shrink-0 flex items-center justify-center text-sm font-black shadow-lg shadow-black/20 ${
-            role === 'user'
-              ? 'bg-linear-to-br from-primary to-blue-500 text-white'
-              : 'bg-linear-to-br from-slate-800 to-slate-900 border border-white/20 text-primary'
-          }`}
+          className={`w-10 h-10 rounded-xl shrink-0 flex items-center justify-center text-sm font-black shadow-lg shadow-black/20 ${role === 'user'
+            ? 'bg-linear-to-br from-primary to-blue-500 text-white'
+            : 'bg-linear-to-br from-slate-800 to-slate-900 border border-white/20 text-primary'
+            }`}
         >
           {role === 'user' ? (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -166,9 +170,11 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ role, content, isLast,
           )}
         </div>
         <div
-          className={`p-6 rounded-3xl relative glass-card group transition-all duration-300 shadow-xl ${
-            role === 'user' ? 'border-primary/30 bg-primary/10 text-white' : 'border-white/10 bg-slate-800/80 text-slate-100 mt-2'
-          }`}
+          className={`p-6 rounded-3xl relative glass-card group transition-all duration-300 shadow-xl ${role === 'user' ? 'border-primary/30 bg-primary/10 text-white' :
+            modelInfo && !modelInfo.isDefaultModel ?
+              'border-white/10 bg-linear-to-br from-purple-900/50 to-blue-900/50 text-slate-100 mt-2 shadow-lg shadow-purple-500/20' :
+              'border-white/10 bg-slate-800/80 text-slate-100 mt-2'
+            }`}
         >
           {isStreaming && (
             <div className="mb-4 flex flex-col gap-2 text-[10px] uppercase tracking-[0.4em] text-slate-400">
@@ -249,17 +255,28 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ role, content, isLast,
               onClick={() => navigator.clipboard?.writeText(copyText)}
               className="text-[10px] font-bold text-slate-400 hover:text-white transition-colors uppercase tracking-widest flex items-center gap-1"
             >
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                  />
-                </svg>
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                />
+              </svg>
               Copiar
             </button>
           </div>
+          {modelInfo && !modelInfo.isDefaultModel && (
+            <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-between text-xs text-slate-400 border-l-4 border-purple-500 bg-purple-900/10 animate-pulse">
+              <span className="font-mono text-purple-400">{modelInfo.modelId}</span>
+              <span className="text-[10px] uppercase tracking-widest text-purple-400">
+                Modelo Especial
+              </span>
+              <span className="ml-2 text-[10px] text-purple-400">
+                Modelo: {modelInfo.modelId}
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </div>

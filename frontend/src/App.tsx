@@ -13,15 +13,11 @@ import { MemoryDashboard } from "./components/Memory/MemoryDashboard";
 
 import { Sidebar } from "./components/Sidebar/Sidebar";
 
-import { api, type ChatAttachmentPayload } from "./services/api";
-
-type SpeechRecognitionConstructor = new () => SpeechRecognition;
-
-declare global {
-  interface Window {
-    webkitSpeechRecognition?: SpeechRecognitionConstructor;
-  }
-}
+import {
+  api,
+  type ChatAttachmentPayload,
+  type ModelCatalogEntry,
+} from "./services/api";
 
 interface Message {
   role: "user" | "assistant";
@@ -31,6 +27,12 @@ interface Message {
   model?: string;
 
   attachments?: ChatAttachment[];
+
+  modelInfo?: {
+    modelId: string;
+    isDefaultModel: boolean;
+    routerReason: string;
+  };
 }
 
 interface Session {
@@ -173,7 +175,7 @@ function App() {
 
   const [input, setInput] = useState("");
 
-  const [models, setModels] = useState<string[]>([]);
+  const [models, setModels] = useState<ModelCatalogEntry[]>([]);
 
   const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL_ID);
 
@@ -207,13 +209,15 @@ function App() {
     { id: "memory", label: "Memória L2" },
   ];
 
+  const formatModelLabel = (entry: ModelCatalogEntry) =>
+    entry.id.split("/").pop()?.toUpperCase().replace(/-/g, " ") || entry.id;
+
   const modelOptions = [
     { id: AUTO_MODEL_ID, label: "Auto (Recomendado)" },
     { id: DEFAULT_MODEL_ID, label: "Default Recomendado" },
-    ...models.map((modelId) => ({
-      id: modelId,
-      label:
-        modelId.split("/").pop()?.toUpperCase().replace(/-/g, " ") || modelId,
+    ...models.map((entry) => ({
+      id: entry.id,
+      label: formatModelLabel(entry),
     })),
   ];
 
@@ -237,7 +241,7 @@ function App() {
 
   useEffect(() => {
     api.getModels().then((data) => {
-      setModels(data.models || []);
+      setModels(Array.isArray(data.models) ? data.models : []);
     });
 
     // Busca sessões reais do banco de dados
@@ -528,6 +532,7 @@ function App() {
         content: serializeMessage(msg),
       }));
 
+      let modelInfo: { modelId: string; isDefaultModel: boolean; routerReason: string } | null = null;
       await api.chatStream(
         streamMessages,
         selectedModel,
@@ -539,12 +544,18 @@ function App() {
 
             if (newMsgs.length > 0) {
               newMsgs[newMsgs.length - 1].content = aiMsgContent;
+              if (modelInfo) {
+                newMsgs[newMsgs.length - 1].modelInfo = modelInfo;
+              }
             }
 
             return newMsgs;
           });
         },
-        payloadAttachments
+        payloadAttachments,
+        (info) => {
+          modelInfo = info;
+        }
       );
 
       // Auto-Save: Salva a sessão após a resposta concluída
@@ -812,8 +823,8 @@ function App() {
                     <button
                       onClick={toggleListening}
                       className={`w-12 h-12 rounded-2xl transition-all flex items-center justify-center ${isListening
-                          ? "bg-red-500/20 text-red-300 hover:bg-red-500/30"
-                          : "bg-white/5 text-slate-200 hover:bg-white/10"
+                        ? "bg-red-500/20 text-red-300 hover:bg-red-500/30"
+                        : "bg-white/5 text-slate-200 hover:bg-white/10"
                         }`}
                       title={isListening ? "Parar transcricao" : "Transcrever voz"}
                       aria-label={isListening ? "Parar transcricao" : "Transcrever voz"}

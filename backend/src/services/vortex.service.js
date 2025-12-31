@@ -41,6 +41,7 @@ async function distillAndSave(sessionId, history, userConsent = {}) {
     // Salva apenas o que foi aprovado ou filtrado
     for (const item of extracted) {
       const embedding = await generateEmbedding(item.content);
+      const serializedEmbedding = embedding ? JSON.stringify(embedding) : null;
       const id = `vtx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       await db.run(
         `INSERT INTO memories (id, content, type, tier, neural_map, embedding, source_session_id, createdAt) 
@@ -51,7 +52,7 @@ async function distillAndSave(sessionId, history, userConsent = {}) {
           item.type,
           item.tier || "bronze",
           JSON.stringify(item.neural_map),
-          JSON.stringify(embedding),
+          serializedEmbedding,
           sessionId,
           Date.now(),
         ]
@@ -71,7 +72,7 @@ async function recall(query, type = null, limit = 10) {
     const queryVector = await generateEmbedding(query, "query");
     if (!queryVector) return [];
     let sql =
-      "SELECT id, content, type, neural_map, embedding FROM memories WHERE embedding IS NOT NULL";
+      "SELECT id, content, type, neural_map, embedding FROM memories WHERE embedding IS NOT NULL AND embedding != 'null'";
     const params = [];
     if (type) {
       sql += " AND type = ?";
@@ -81,13 +82,19 @@ async function recall(query, type = null, limit = 10) {
     // Similaridade de cosseno manual (JavaScript performance)
     const scored = rows
       .map((row) => {
-        const rowVec = JSON.parse(row.embedding);
+        let rowVec;
+        try {
+          rowVec = JSON.parse(row.embedding);
+        } catch (err) {
+          return null;
+        }
+        if (!Array.isArray(rowVec) || rowVec.length === 0) return null;
         return {
           ...row,
           similarity: _cosineSimilarity(queryVector, rowVec),
         };
       })
-      .filter((r) => r.similarity > 0.4) // Threshold de 40%
+      .filter((r) => r && r.similarity > 0.4) // Threshold de 40%
       .sort((a, b) => b.similarity - a.similarity)
       .slice(0, 20); // Pega os 20 melhores para o Rerank
     // Reranking de Elite (NVIDIA)
@@ -107,10 +114,11 @@ function _cosineSimilarity(vecA, vecB) {
     magA += vecA[i] * vecA[i];
     magB += vecB[i] * vecB[i];
   }
-  return dotProduct / (Math.sqrt(magA) * Math.sqrt(magB));
+  const denom = Math.sqrt(magA) * Math.sqrt(magB);
+  if (!denom) return 0;
+  return dotProduct / denom;
 }
 module.exports = {
   distillAndSave,
   recall,
 };
-

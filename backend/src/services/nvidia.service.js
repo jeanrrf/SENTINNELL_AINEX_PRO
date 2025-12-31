@@ -37,6 +37,7 @@ async function chatCompletion(messages, model, options = {}) {
         throw error;
     }
 }
+
 async function listModelsRaw() {
     try {
         const response = await client.models.list();
@@ -79,4 +80,3 @@ module.exports = {
     listModelsRaw,
     listModels
 };
-

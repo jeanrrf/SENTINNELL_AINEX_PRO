@@ -7,8 +7,8 @@ module.exports = {
         baseURL: 'https://integrate.api.nvidia.com/v1',
         defaultModel: process.env.NVIDIA_DEFAULT_TEXT_MODEL || 'meta/llama-3.3-70b-instruct',
         powerModel: process.env.NVIDIA_POWER_MODEL || 'meta/llama-3.3-70b-instruct',
-        embeddingModel: 'nvidia/llama-3.2-nv-embedqa-1b-v2',
-        rerankModel: 'nvidia/llama-3.2-nemoretriever-500m-rerank-v2'
+        embeddingModel: process.env.NVIDIA_EMBEDDING_MODEL || 'nvidia/llama-3.2-nv-embedqa-1b-v2',
+        rerankModel: process.env.NVIDIA_RERANK_MODEL || 'nvidia/llama-3.2-nemoretriever-500m-rerank-v2'
     },
     router: {
         autoModelId: 'auto',
@@ -34,11 +34,16 @@ module.exports = {
             .filter(Boolean),
         enableMultimodal: process.env.ROUTER_ENABLE_MULTIMODAL === 'true',
         enableAsr: process.env.ROUTER_ENABLE_ASR !== 'false',
+        enableDocParse: process.env.ROUTER_ENABLE_DOC_PARSE === 'true',
         asrProvider: process.env.ROUTER_ASR_PROVIDER || 'riva',
         modelsCacheTtlMs: parseInt(process.env.NVIDIA_MODELS_CACHE_TTL_MS || '600000', 10),
         maxRetries: parseInt(process.env.NVIDIA_ROUTER_MAX_RETRIES || '3', 10),
         retryBaseDelayMs: parseInt(process.env.NVIDIA_ROUTER_RETRY_BASE_DELAY_MS || '300', 10),
         retryMaxDelayMs: parseInt(process.env.NVIDIA_ROUTER_RETRY_MAX_DELAY_MS || '2000', 10),
+        modelDenylist: (process.env.NVIDIA_MODEL_DENYLIST || 'mistral-675,video')
+            .split(',')
+            .map(token => token.trim())
+            .filter(Boolean),
         fallbackCatalog: (process.env.NVIDIA_MODEL_FALLBACK_CATALOG ||
             'meta/llama-3.3-70b-instruct,meta/llama-3.2-90b-vision-instruct,microsoft/phi-4-multimodal-instruct,nvidia/nemotron-parse')
             .split(',')
@@ -78,4 +83,3 @@ module.exports = {
         origin: '*' // Simplificado para uso pessoal
     }
 };
-

@@ -5,8 +5,8 @@ const compression = require('compression');
 const config = require('./config');
 const logger = require('./utils/logger');
 const db = require('./services/db.service');
-const nvidia = require('./services/nvidia.service');
 const modelRouter = require('./services/model-router.service');
+const registry = require('./services/capability-registry.service');
 const riva = require('./services/riva.service');
 const geminiTts = require('./services/gemini-tts.service');
 const memory = require('./services/memory.service');
@@ -39,11 +39,28 @@ app.get('/api/health', (req, res) => {
 // Listar Modelos NVIDIA
 app.get('/api/models', async (req, res) => {
     try {
-        const models = await nvidia.listModels();
-        res.json({ models });
+        const catalog = await registry.getCatalog();
+        res.json({
+            source: catalog.source,
+            models: catalog.models
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
+});
+app.get('/api/models/recommended', (req, res) => {
+    const blueprint = registry.getBlueprint();
+    res.json({
+        chatDefault: blueprint.chatDefault,
+        hardTask: blueprint.hardTask,
+        vision: blueprint.vision,
+        multimodal: blueprint.multimodal,
+        docParse: blueprint.docParse,
+        ocr: blueprint.ocr,
+        safety: blueprint.safety,
+        embed: blueprint.embed,
+        rerank: blueprint.rerank
+    });
 });
 app.get('/api/live/models', (req, res) => {
     const available = (config.google?.availableModels ?? []).length
@@ -81,6 +98,14 @@ app.post('/api/chat/stream', async (req, res) => {
             latencyMs: {},
             toolCalls: []
         };
+
+        // Enviar informações do modelo no início do stream
+        const modelInfo = {
+            modelId,
+            isDefaultModel: routing.isDefaultModel,
+            routerReason: routing.trace.routerReason
+        };
+        res.write(`data: ${JSON.stringify({ modelInfo })}\n\n`);
         const abortStream = () => {
             if (stream && typeof stream.abort === 'function') stream.abort();
             if (stream?.controller && typeof stream.controller.abort === 'function') stream.controller.abort();
@@ -240,8 +265,8 @@ app.get('/api/memories', async (req, res) => {
 });
 app.post('/api/memories', async (req, res) => {
     try {
-        const { content, tier, tags, sessionId } = req.body;
-        const id = await memory.saveKnowledge(content, tier, tags, sessionId);
+        const { content, tier, tags, sessionId, type, neuralMap } = req.body;
+        const id = await memory.saveKnowledge(content, tier, tags, sessionId, type, neuralMap);
         res.status(201).json({ id });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -300,4 +325,3 @@ app.use((err, req, res, next) => {
 app.listen(config.port, () => {
     logger.success(`🚀 SENTINNELL PRO Backend rodando na porta ${config.port}`);
 });
-

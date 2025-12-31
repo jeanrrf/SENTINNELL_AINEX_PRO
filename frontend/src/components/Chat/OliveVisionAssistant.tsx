@@ -356,10 +356,18 @@ export const OliveVisionAssistant = ({
             setConnectionState("CONNECTED");
 
             if (liveSession.current) {
-              liveSession.current.send({
-                input:
-                  "Responda sempre em Portugues Brasileiro. Nao use texto de processo interno. Responda apenas com a resposta final, curta e objetiva.",
-                endOfTurn: true,
+              liveSession.current.sendClientContent({
+                turns: [
+                  {
+                    role: "user",
+                    parts: [
+                      {
+                        text: "Responda sempre em Portugues Brasileiro. Nao use texto de processo interno. Responda apenas com a resposta final, curta e objetiva.",
+                      },
+                    ],
+                  },
+                ],
+                turnComplete: true,
               });
             }
           },
@@ -635,4 +643,3 @@ export const OliveVisionAssistant = ({
     </div>
   );
 };
-

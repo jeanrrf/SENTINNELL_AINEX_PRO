@@ -12,13 +12,37 @@ export interface ChatAttachmentPayload {
     mimeType: string;
     data: string;
 }
+
+export interface ModelCatalogEntry {
+    id: string;
+    sizeB?: number | null;
+    tags?: string[];
+    recommended?: boolean;
+    recommendedFor?: string[];
+    isChat?: boolean;
+    supportsVision?: boolean;
+    supportsMultimodal?: boolean;
+    isParse?: boolean;
+    isOcr?: boolean;
+    isSafety?: boolean;
+    isEmbedding?: boolean;
+    isRerank?: boolean;
+    isVideo?: boolean;
+}
 export interface AsrPayload {
     name: string;
     size: number;
     mimeType: string;
     data: string;
 }
-async function streamSse(response: Response, onChunk: (chunk: string) => void) {
+
+export interface ModelInfo {
+    modelId: string;
+    isDefaultModel: boolean;
+    routerReason: string;
+}
+
+async function streamSse(response: Response, onChunk: (chunk: string) => void, onModelInfo?: (modelInfo: ModelInfo) => void) {
     const reader = response.body?.getReader();
     const decoder = new TextDecoder();
     if (!reader) return;
@@ -40,6 +64,9 @@ async function streamSse(response: Response, onChunk: (chunk: string) => void) {
                     const parsed = JSON.parse(data);
                     if (parsed.error) {
                         throw new Error(parsed.error);
+                    }
+                    if (parsed.modelInfo && onModelInfo) {
+                        onModelInfo(parsed.modelInfo);
                     }
                     if (parsed.content) onChunk(parsed.content);
                 } catch (error) {
@@ -64,7 +91,8 @@ export const api = {
         messages: ChatMessage[],
         model: string,
         onChunk: (chunk: string) => void,
-        attachments: ChatAttachmentPayload[] = []
+        attachments: ChatAttachmentPayload[] = [],
+        onModelInfo?: (modelInfo: ModelInfo) => void
     ) => {
         const response = await fetch(`${API_BASE_URL}/chat/stream`, {
             method: 'POST',
@@ -75,7 +103,7 @@ export const api = {
             const errorText = await response.text().catch(() => '');
             throw new Error(errorText || `HTTP ${response.status}`);
         }
-        await streamSse(response, onChunk);
+        await streamSse(response, onChunk, onModelInfo);
     },
     distill: async (sessionId: string, history: ChatMessage[]) => {
         const response = await fetch(`${API_BASE_URL}/vortex/distill`, {
@@ -120,4 +148,3 @@ export const api = {
         return response.json();
     }
 };
-
