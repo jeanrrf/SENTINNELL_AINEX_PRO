@@ -23,7 +23,7 @@ async function chatCompletion(messages, model, options = {}) {
     const stream = resolvedOptions.stream !== undefined ? resolvedOptions.stream : true;
     const temperature = resolvedOptions.temperature !== undefined ? resolvedOptions.temperature : 0.6;
     const maxTokens = resolvedOptions.maxTokens !== undefined ? resolvedOptions.maxTokens : 2048;
-    logger.info(`Chamando NVIDIA NIM: ${apiModel}`);
+    logger.debug(`Chamando NVIDIA NIM: ${apiModel}`);
     try {
         return await client.chat.completions.create({
             model: apiModel,
@@ -33,7 +33,10 @@ async function chatCompletion(messages, model, options = {}) {
             max_tokens: maxTokens
         });
     } catch (error) {
-        logger.error(`Erro na API NVIDIA: ${error.message}`);
+        const status = error?.status || error?.response?.status || error?.error?.status;
+        const details = error?.response?.data || error?.error || null;
+        const detailText = details ? ` | details=${JSON.stringify(details).slice(0, 1500)}` : '';
+        logger.error(`Erro na API NVIDIA: ${error.message}${status ? ` (status=${status})` : ''}${detailText}`);
         throw error;
     }
 }

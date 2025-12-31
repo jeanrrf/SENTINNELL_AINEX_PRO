@@ -108,3 +108,4 @@ export function VortexDistillModal({ sessionId, history, onClose, onComplete }: 
         </div>
     );
 }
+

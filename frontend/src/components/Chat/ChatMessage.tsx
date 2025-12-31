@@ -125,6 +125,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ role, content, isLast,
   const isStreaming = isAssistant && !finalContent && isLast;
   const hasAttachments = (attachments?.length ?? 0) > 0;
   const copyText = finalContent || content;
+  const showAltModel = Boolean(modelInfo && !modelInfo.isDefaultModel);
   const [ttsStatus, setTtsStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const [ttsError, setTtsError] = useState<string | null>(null);
   const handleSpeak = async () => {
@@ -152,8 +153,8 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ role, content, isLast,
       <div className={`flex gap-4 max-w-[85%] ${role === 'user' ? 'flex-row-reverse' : ''}`}>
         <div
           className={`w-10 h-10 rounded-xl shrink-0 flex items-center justify-center text-sm font-black shadow-lg shadow-black/20 ${role === 'user'
-            ? 'bg-linear-to-br from-primary to-blue-500 text-white'
-            : 'bg-linear-to-br from-slate-800 to-slate-900 border border-white/20 text-primary'
+            ? 'bg-linear-to-br from-primary to-accent text-white'
+            : 'bg-linear-to-br from-black/70 to-emerald-950 border border-emerald-500/20 text-primary'
             }`}
         >
           {role === 'user' ? (
@@ -174,8 +175,8 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ role, content, isLast,
         <div
           className={`p-6 rounded-3xl relative glass-card group transition-all duration-300 shadow-xl ${role === 'user' ? 'border-primary/30 bg-primary/10 text-white' :
             modelInfo && !modelInfo.isDefaultModel ?
-              'border-white/10 bg-linear-to-br from-purple-900/50 to-blue-900/50 text-slate-100 mt-2 shadow-lg shadow-purple-500/20' :
-              'border-white/10 bg-slate-800/80 text-slate-100 mt-2'
+              'border-emerald-500/30 bg-linear-to-br from-[#0b1d14]/80 to-[#0c1d2a]/80 text-slate-100 mt-2 shadow-lg shadow-emerald-500/10' :
+              'border-emerald-500/15 bg-[#0b1512]/75 text-slate-100 mt-2'
             }`}
         >
           {isStreaming && (
@@ -239,11 +240,26 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ role, content, isLast,
               ))}
             </div>
           )}
-          <div className="mt-4 pt-4 border-t border-white/10 opacity-0 group-hover:opacity-100 transition-opacity flex justify-end gap-3">
+          <div
+            className={`mt-4 opacity-100 transition-opacity flex items-center gap-3 rounded-2xl px-3 py-2 border ${showAltModel
+              ? 'border-purple-500/30 bg-purple-900/10 shadow-[0_0_18px_rgba(168,85,247,0.2)]'
+              : 'border-white/10 bg-white/5'
+              }`}
+          >
+            {showAltModel && (
+              <span className="px-2 py-1 rounded-lg text-[10px] font-mono uppercase tracking-widest text-purple-300 border border-purple-500/40 bg-purple-500/10 shadow-[0_0_12px_rgba(168,85,247,0.35)]">
+                {modelInfo?.modelId}
+              </span>
+            )}
+            <div className="ml-auto flex items-center gap-3">
             {isAssistant && (
               <button
                 onClick={handleSpeak}
-                className="text-[10px] font-bold text-slate-400 hover:text-white transition-colors uppercase tracking-widest flex items-center gap-1"
+                className={`px-3 py-2 rounded-xl border text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 transition-all duration-300 ${
+                  ttsStatus === 'loading'
+                    ? 'border-emerald-400/50 text-emerald-200 bg-emerald-500/10 shadow-[0_0_14px_rgba(69,255,135,0.35)]'
+                    : 'border-emerald-500/20 text-slate-300 hover:text-white hover:border-primary/40 hover:bg-white/5 hover:shadow-[0_0_12px_rgba(69,255,135,0.25)]'
+                }`}
                 title={ttsError || 'Reproduzir audio'}
                 aria-label="Reproduzir audio"
               >
@@ -255,45 +271,20 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ role, content, isLast,
             )}
             <button
               onClick={() => navigator.clipboard?.writeText(copyText)}
-              className="text-[10px] font-bold text-slate-400 hover:text-white transition-colors uppercase tracking-widest flex items-center gap-1"
+              className="px-3 py-2 rounded-xl border border-emerald-500/20 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 text-slate-300 hover:text-white hover:border-primary/40 hover:bg-white/5 transition-all duration-300 hover:shadow-[0_0_12px_rgba(69,255,135,0.25)]"
             >
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 00-2-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
                 />
               </svg>
               Copiar
             </button>
+            </div>
           </div>
-          {modelInfo && !modelInfo.isDefaultModel && (
-            <div className="mt-4 pt-4 border-t flex items-center justify-between text-xs text-slate-400 border-l-4 border-purple-500 bg-purple-900/10 animate-pulse">
-              <span className="font-mono text-purple-400">{modelInfo.modelId}</span>
-              <span className="text-[10px] uppercase tracking-widest text-purple-400">
-                Modelo Especial
-              </span>
-              <span className="ml-2 text-[10px] text-purple-400">
-                Modelo: {modelInfo.modelId}
-              </span>
-            </div>
-          )}
-          {modelInfo && (modelInfo.routingTags?.length || modelInfo.usedModels) && (
-            <div className="mt-3 pt-3 border-t border-white/10 text-[11px] text-slate-400 flex flex-wrap gap-x-4 gap-y-1">
-              {modelInfo.routerReason ? (
-                <span className="font-mono">router: {modelInfo.routerReason}</span>
-              ) : null}
-              {modelInfo.routingTags?.length ? (
-                <span className="font-mono">tags: {modelInfo.routingTags.join(', ')}</span>
-              ) : null}
-              {modelInfo.usedModels && Object.keys(modelInfo.usedModels).length ? (
-                <span className="font-mono">
-                  agents: {Object.entries(modelInfo.usedModels).map(([k, v]) => `${k}=${v}`).join(' | ')}
-                </span>
-              ) : null}
-            </div>
-          )}
         </div>
       </div>
     </div>
