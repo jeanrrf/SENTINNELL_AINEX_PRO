@@ -59,6 +59,7 @@
 - **Editar só com contexto**: antes de mudar um arquivo, ler a seção completa (evita quebrar padrões locais).
 - **Mudança mínima**: não reformatar arquivo inteiro; patch pequeno, validado, e só depois continuar.
 - **Sem bypass de segurança**: não introduzir “allow all”, “skip auth”, “if dev bypass” (mesmo temporário) sem alternativa segura + evidência no repo.
+- **Parâmetros obrigatórios**: sempre fornecer todos os parâmetros obrigatórios para todas as ferramentas (ex: `search_files` requer `path`, `read_file` requer `files`, `execute_command` requer `command`, etc.).
 
 ## Padrão de investigação (ordem que reduz retrabalho)
 1) Verificar `.rooignore` se algo “sumiu” nas buscas do Agent.
@@ -67,8 +68,8 @@
 
 ## Debug (use o que já está pronto)
 - Falhou `dev/start`? Olhe primeiro:
-  - backend → `backend-dev.err.log` / `backend-dev.out.log`
-  - frontend → `frontend-dev.err.log` / `frontend-dev.out.log`
+  - backend –â `backend-dev.err.log` / `backend-dev.out.log`
+  - frontend –â `frontend-dev.err.log` / `frontend-dev.out.log`
 - Ao relatar problema, sempre incluir: lado (backend/frontend), log (err/out) e trecho exato do erro.
 
 ## Como o Agent deve responder

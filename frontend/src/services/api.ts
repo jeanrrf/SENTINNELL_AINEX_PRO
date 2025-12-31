@@ -40,6 +40,8 @@ export interface ModelInfo {
     modelId: string;
     isDefaultModel: boolean;
     routerReason: string;
+    routingTags?: string[];
+    usedModels?: Record<string, string>;
 }
 
 async function streamSse(response: Response, onChunk: (chunk: string) => void, onModelInfo?: (modelInfo: ModelInfo) => void) {

@@ -1,6 +1,7 @@
 // SENTINNELL_PRO/backend/src/services/document.service.js
 
 const officeParser = require('officeparser');
+const pdfParse = require('pdf-parse');
 const logger = require('../utils/logger');
 
 const SUPPORTED_EXTENSIONS = new Set([
@@ -49,15 +50,23 @@ async function extractDocumentText(attachment, config = {}) {
     if (!buffer) return { text: '', error: 'invalid_buffer' };
 
     try {
+        const mimeType = String(attachment?.mimeType || '').toLowerCase();
+        const ext = getExtension(attachment?.name);
+        const isPdf = mimeType === 'application/pdf' || ext === 'pdf';
+        if (isPdf) {
+            const result = await pdfParse(buffer);
+            return { text: (result?.text || '').trim(), error: null, parser: 'pdf-parse' };
+        }
+
         const text = await officeParser.parseOfficeAsync(buffer, {
             newLineDelimiter: '\n',
             ...config
         });
 
-        return { text: (text || '').trim(), error: null };
+        return { text: (text || '').trim(), error: null, parser: 'officeparser' };
     } catch (error) {
         logger.error(`Erro ao extrair texto do documento: ${error.message}`);
-        return { text: '', error: error.message };
+        return { text: '', error: error.message, parser: null };
     }
 }
 
@@ -65,4 +74,3 @@ module.exports = {
     isDocumentAttachment,
     extractDocumentText
 };
-

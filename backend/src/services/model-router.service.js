@@ -177,13 +177,23 @@ async function buildAttachmentContext({ attachments, catalog, extraParts = [] })
 
     if (documents.length) {
         const parsedDocs = [];
+        const parsers = new Set();
         for (const doc of documents) {
-            const { text, error } = await extractDocumentText(doc);
+            const { text, error, parser } = await extractDocumentText(doc);
+            if (parser) parsers.add(parser);
             parsedDocs.push({
                 name: doc.name,
                 text: truncateText(text, MAX_DOC_CHARS),
-                error
+                error,
+                parser: parser || null
             });
+        }
+        if (parsers.size === 1) {
+            usedModels.docExtract = [...parsers][0];
+        } else if (parsers.size > 1) {
+            usedModels.docExtract = 'mixed';
+        } else {
+            usedModels.docExtract = 'unknown';
         }
 
         const docModel = config.router.enableDocParse
@@ -193,7 +203,12 @@ async function buildAttachmentContext({ attachments, catalog, extraParts = [] })
         if (docModel) {
             usedModels.docParse = docModel;
             for (const doc of parsedDocs) {
-                if (!doc.text) continue;
+                if (!doc.text) {
+                    if (doc.error) {
+                        contextParts.push(`DOC_ERROR:${doc.name}\n${doc.error}`);
+                    }
+                    continue;
+                }
                 let parsed = '';
                 try {
                     parsed = await runDocParse(doc.text, docModel);
@@ -210,7 +225,12 @@ async function buildAttachmentContext({ attachments, catalog, extraParts = [] })
             }
         } else {
             for (const doc of parsedDocs) {
-                if (!doc.text) continue;
+                if (!doc.text) {
+                    if (doc.error) {
+                        contextParts.push(`DOC_ERROR:${doc.name}\n${doc.error}`);
+                    }
+                    continue;
+                }
                 contextParts.push(`DOC_TEXT:${doc.name}\n${doc.text}`);
             }
         }
@@ -305,6 +325,14 @@ async function createChatStream(messages, primaryModel, fallbackModels = []) {
     throw err;
 }
 
+function appendRouterReason(reason = '', tag = '') {
+    const cleanTag = String(tag || '').trim();
+    if (!cleanTag) return reason;
+    if (!reason) return cleanTag;
+    if (reason.includes(cleanTag)) return reason;
+    return `${reason}+${cleanTag}`;
+}
+
 async function routeTurn({ messages = [], model, attachments = [] }) {
     const traceId = crypto.randomUUID();
     const catalog = await registry.getCatalog();
@@ -337,6 +365,7 @@ async function routeTurn({ messages = [], model, attachments = [] }) {
 
     const images = safeAttachments.filter(isImageAttachment);
     const hasAudio = safeAttachments.some(isAudioAttachment);
+    const hasDocuments = safeAttachments.some(att => isDocumentAttachment(att) && att.data);
 
     if (config.router.enableMultimodal && images.length && hasAudio) {
         const multimodal = resolveModelId(
@@ -396,6 +425,20 @@ async function routeTurn({ messages = [], model, attachments = [] }) {
     });
 
     const combinedUsedModels = { ...usedModels, ...contextUsed };
+    if (hasDocuments) {
+        routerReason = appendRouterReason(routerReason, combinedUsedModels.docParse ? 'doc_parse' : 'doc');
+    }
+    if (hasAudio && combinedUsedModels.asr) {
+        routerReason = appendRouterReason(routerReason, 'asr');
+    }
+    const routingTags = [];
+    if (requiresVision) routingTags.push('vision');
+    if (combinedUsedModels.multimodal) routingTags.push('multimodal');
+    if (hasAudio) routingTags.push('audio');
+    if (hasDocuments) routingTags.push('document');
+    if (combinedUsedModels.docParse) routingTags.push('doc_parse');
+    if (combinedUsedModels.asr) routingTags.push('asr');
+
     if (contextMessage) {
         preparedMessages = [preparedMessages[0], contextMessage, ...preparedMessages.slice(1)];
     }
@@ -404,10 +447,12 @@ async function routeTurn({ messages = [], model, attachments = [] }) {
         traceId,
         mode: choice.mode,
         routerReason,
+        routingTags,
         selectedModel: chatModel,
         fallbackChain: fallbackModels,
         usedModels: combinedUsedModels,
         audioAttachments: safeAttachments.filter(isAudioAttachment).length,
+        documentAttachments: safeAttachments.filter(att => isDocumentAttachment(att) && att.data).length,
         asrProvider: config.router.enableAsr ? config.router.asrProvider || 'riva' : 'disabled',
         timestamp: Date.now()
     };

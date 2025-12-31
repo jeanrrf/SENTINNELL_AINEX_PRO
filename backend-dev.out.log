@@ -11,4 +11,15 @@
 [32m[SUCCESS][39m 🚀 SENTINNELL PRO Backend rodando na porta 3001
 [32m[SUCCESS][39m Conectado ao banco de dados: ./data/sentinnell.db
 [33m[WARN][39m [CATALOG] Model ids duplicados detectados: openai/gpt-oss-120b, openai/gpt-oss-20b
-[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[36m[INFO][39m Chamando NVIDIA NIM: nvidia/nemotron-parse
+[31m[ERROR][39m Erro na API NVIDIA: 400 status code (no body) 
+[33m[WARN][39m Falha ao parsear documento "dummy.pdf" com nvidia/nemotron-parse: 400 status code (no body)
+[36m[INFO][39m Chamando NVIDIA NIM: meta/llama-3.3-70b-instruct
+[36m[INFO][39m [PERF] TTFT: 2394ms (meta/llama-3.3-70b-instruct)
+[36m[INFO][39m [ROUTER_TRACE] {"traceId":"44b286ec-721b-421a-a40f-79236af8e51d","mode":"auto","routerReason":"auto_text+doc_parse","routingTags":["document","doc_parse"],"selectedModel":"meta/llama-3.3-70b-instruct","fallbackChain":["abacusai/dracarys-llama-3.1-70b-instruct","ai21labs/jamba-1.5-large-instruct","ai21labs/jamba-1.5-mini-instruct","databricks/dbrx-instruct","deepseek-ai/deepseek-r1-0528"],"usedModels":{"docExtract":"pdf-parse","docParse":"nvidia/nemotron-parse"},"audioAttachments":0,"documentAttachments":1,"asrProvider":"riva","timestamp":1767177706613,"attempts":[],"latencyMs":{"ttft":2394,"total":13805},"toolCalls":[]}
+[36m[INFO][39m Chamando NVIDIA NIM: nvidia/nemotron-parse
+[31m[ERROR][39m Erro na API NVIDIA: 400 status code (no body) 
+[33m[WARN][39m Falha ao parsear documento "dummy.pdf" com nvidia/nemotron-parse: 400 status code (no body)
+[36m[INFO][39m Chamando NVIDIA NIM: meta/llama-3.3-70b-instruct
+[36m[INFO][39m [PERF] TTFT: 2034ms (meta/llama-3.3-70b-instruct)
+[36m[INFO][39m [ROUTER_TRACE] {"traceId":"b3562809-b918-4aac-a55d-3dba318a62db","mode":"auto","routerReason":"auto_text+doc_parse","routingTags":["document","doc_parse"],"selectedModel":"meta/llama-3.3-70b-instruct","fallbackChain":["abacusai/dracarys-llama-3.1-70b-instruct","ai21labs/jamba-1.5-large-instruct","ai21labs/jamba-1.5-mini-instruct","databricks/dbrx-instruct","deepseek-ai/deepseek-r1-0528"],"usedModels":{"docExtract":"pdf-parse","docParse":"nvidia/nemotron-parse"},"audioAttachments":0,"documentAttachments":1,"asrProvider":"riva","timestamp":1767177731931,"attempts":[],"latencyMs":{"ttft":2034,"total":15292},"toolCalls":[]}

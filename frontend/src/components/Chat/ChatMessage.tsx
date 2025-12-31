@@ -19,6 +19,8 @@ interface ChatMessageProps {
     modelId: string;
     isDefaultModel: boolean;
     routerReason: string;
+    routingTags?: string[];
+    usedModels?: Record<string, string>;
   };
 }
 const formatInline = (text: string) => {
@@ -277,9 +279,23 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ role, content, isLast,
               </span>
             </div>
           )}
+          {modelInfo && (modelInfo.routingTags?.length || modelInfo.usedModels) && (
+            <div className="mt-3 pt-3 border-t border-white/10 text-[11px] text-slate-400 flex flex-wrap gap-x-4 gap-y-1">
+              {modelInfo.routerReason ? (
+                <span className="font-mono">router: {modelInfo.routerReason}</span>
+              ) : null}
+              {modelInfo.routingTags?.length ? (
+                <span className="font-mono">tags: {modelInfo.routingTags.join(', ')}</span>
+              ) : null}
+              {modelInfo.usedModels && Object.keys(modelInfo.usedModels).length ? (
+                <span className="font-mono">
+                  agents: {Object.entries(modelInfo.usedModels).map(([k, v]) => `${k}=${v}`).join(' | ')}
+                </span>
+              ) : null}
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 };
-

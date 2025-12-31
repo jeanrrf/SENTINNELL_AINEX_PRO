@@ -103,7 +103,9 @@ app.post('/api/chat/stream', async (req, res) => {
         const modelInfo = {
             modelId,
             isDefaultModel: routing.isDefaultModel,
-            routerReason: routing.trace.routerReason
+            routerReason: routing.trace.routerReason,
+            routingTags: routing.trace.routingTags,
+            usedModels: routing.trace.usedModels
         };
         res.write(`data: ${JSON.stringify({ modelInfo })}\n\n`);
         const abortStream = () => {
