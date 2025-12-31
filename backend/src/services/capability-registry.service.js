@@ -79,8 +79,13 @@ function buildCatalog(modelIds = [], source = 'live') {
     const blueprint = getBlueprint();
     const byId = new Map();
     const models = [];
+    const duplicateIds = new Set();
     for (const id of modelIds) {
         if (!id) continue;
+        if (byId.has(id)) {
+            duplicateIds.add(id);
+            continue;
+        }
         const caps = inferCapabilities(id);
         const recommendedFor = [];
         if (id === blueprint.chatDefault) recommendedFor.push('chat_default');
@@ -109,6 +114,11 @@ function buildCatalog(modelIds = [], source = 'live') {
             recommendedFor
         });
         byId.set(id, caps);
+    }
+    if (duplicateIds.size) {
+        const sample = [...duplicateIds].slice(0, 5).join(', ');
+        const suffix = duplicateIds.size > 5 ? '...' : '';
+        logger.warn(`[CATALOG] Model ids duplicados detectados: ${sample}${suffix}`);
     }
     return { models, byId, source };
 }

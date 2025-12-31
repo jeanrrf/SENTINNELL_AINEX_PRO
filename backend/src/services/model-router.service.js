@@ -12,6 +12,18 @@ const MAX_DOC_CHARS = 12000;
 const MAX_VISION_CHARS = 4000;
 const MAX_ATTACHMENT_COUNT = 6;
 const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;
+const IMAGE_MIME_BY_EXT = {
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+    gif: 'image/gif',
+    webp: 'image/webp',
+    bmp: 'image/bmp',
+    tiff: 'image/tiff',
+    tif: 'image/tiff',
+    heic: 'image/heic',
+    heif: 'image/heif'
+};
 
 function getLastUserMessage(messages = []) {
     for (let i = messages.length - 1; i >= 0; i -= 1) {
@@ -20,10 +32,24 @@ function getLastUserMessage(messages = []) {
     return messages[messages.length - 1];
 }
 
+function getExtension(name = '') {
+    const parts = String(name).toLowerCase().split('.');
+    return parts.length > 1 ? parts[parts.length - 1] : '';
+}
+
+function resolveImageMimeType(att = {}) {
+    const mime = String(att.mimeType || '').toLowerCase();
+    if (mime.startsWith('image/')) return mime;
+    const ext = getExtension(att.name);
+    return IMAGE_MIME_BY_EXT[ext] || mime || 'image/jpeg';
+}
+
 function isImageAttachment(att = {}) {
     const type = String(att.type || '').toLowerCase();
     const mime = String(att.mimeType || '').toLowerCase();
-    return (type === 'image' || mime.startsWith('image/')) && Boolean(att.data);
+    const ext = getExtension(att.name);
+    const looksLikeImage = type === 'image' || mime.startsWith('image/') || Boolean(IMAGE_MIME_BY_EXT[ext]);
+    return looksLikeImage && Boolean(att.data);
 }
 
 function isAudioAttachment(att = {}) {
@@ -46,7 +72,7 @@ function attachImagesToMessages(messages, images) {
             { type: 'text', text: text || ' ' },
             ...images.map(att => ({
                 type: 'image_url',
-                image_url: { url: `data:${att.mimeType};base64,${att.data}` }
+                image_url: { url: `data:${resolveImageMimeType(att)};base64,${att.data}` }
             }))
         ];
         next[i] = { ...next[i], content };
@@ -106,7 +132,7 @@ async function runVisionAnalysis(images, modelId, ocrOnly = false) {
         { type: 'text', text: buildVisionPrompt(ocrOnly) },
         ...images.map(att => ({
             type: 'image_url',
-            image_url: { url: `data:${att.mimeType};base64,${att.data}` }
+            image_url: { url: `data:${resolveImageMimeType(att)};base64,${att.data}` }
         }))
     ];
 
@@ -344,17 +370,13 @@ async function routeTurn({ messages = [], model, attachments = [] }) {
             routerReason = 'vision_turn';
             requiresVision = true;
         } else {
-            const ocrModel = resolveModelId(
-                config.router.ocrModelId,
-                catalog,
-                entry => entry.isOcr
-            );
-
-            if (ocrModel) {
-                usedModels.ocr = ocrModel;
-                const ocr = await runVisionAnalysis(images, ocrModel, true);
-                if (ocr.text) extraParts.push(`OCR_TEXT\n${ocr.text}`);
-            }
+            // Force use of configured vision model even if not present in live catalog
+            const forcedVision = config.router.visionModelId;
+            usedModels.vision = forcedVision;
+            chatModel = forcedVision;
+            preparedMessages = attachImagesToMessages(preparedMessages, images);
+            routerReason = 'forced_vision';
+            requiresVision = true;
         }
     }
 

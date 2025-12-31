@@ -1,0 +1,41 @@
+# Dependency directories
+**/node_modules/
+backend/node_modules/
+frontend/node_modules/
+
+# Build outputs
+**/dist/
+**/build/
+frontend/dist/
+backend/dist/
+
+# Framework specific
+.next/
+.nuxt/
+.svelte-kit/
+
+# Database files
+backend/data/*.db
+
+# Log files
+*.log
+
+# Python cache
+**/__pycache__/
+**/*.py[cod]
+
+# Package directories
+**/packages/
+
+# Application directories
+**/apps/
+
+# Temporary files
+.tmp/
+.temp/
+
+# IDE files
+.vscode/
+.idea/
+**/.DS_Store
+**/Thumbs.db

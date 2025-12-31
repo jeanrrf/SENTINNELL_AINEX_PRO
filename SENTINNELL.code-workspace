@@ -1,0 +1,50 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"editor.tokenColorCustomizations": {
+			"[*Light*]": {
+				"textMateRules": [
+					{
+						"scope": [
+							"variable.unused",
+							"source.js.unused",
+							"source.ts.unused",
+							"constant.other.unused",
+							"function.unused",
+							"class.unused"
+						],
+						"settings": {
+							"foreground": "#FF0000",
+							"fontStyle": "underline"
+						}
+					}
+				]
+			},
+			"[*Dark*]": {
+				"textMateRules": [
+					{
+						"scope": [
+							"variable.unused",
+							"source.js.unused",
+							"source.ts.unused",
+							"constant.other.unused",
+							"function.unused",
+							"class.unused"
+						],
+						"settings": {
+							"foreground": "#FF0000",
+							"fontStyle": "underline"
+						}
+					}
+				]
+			}
+		},
+		"chat.instructionsFilesLocations": {
+			".roo": true
+		}
+	}
+}

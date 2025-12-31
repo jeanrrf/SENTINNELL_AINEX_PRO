@@ -267,7 +267,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ role, content, isLast,
             </button>
           </div>
           {modelInfo && !modelInfo.isDefaultModel && (
-            <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-between text-xs text-slate-400 border-l-4 border-purple-500 bg-purple-900/10 animate-pulse">
+            <div className="mt-4 pt-4 border-t flex items-center justify-between text-xs text-slate-400 border-l-4 border-purple-500 bg-purple-900/10 animate-pulse">
               <span className="font-mono text-purple-400">{modelInfo.modelId}</span>
               <span className="text-[10px] uppercase tracking-widest text-purple-400">
                 Modelo Especial

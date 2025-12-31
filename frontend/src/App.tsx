@@ -51,6 +51,23 @@ type View = "chat" | "memory" | "olive";
 
 const AUTO_MODEL_ID = "auto";
 const DEFAULT_MODEL_ID = "default";
+const IMAGE_MIME_BY_EXT: Record<string, string> = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  gif: "image/gif",
+  webp: "image/webp",
+  bmp: "image/bmp",
+  tiff: "image/tiff",
+  tif: "image/tiff",
+  heic: "image/heic",
+  heif: "image/heif",
+};
+
+const inferImageMimeType = (name: string) => {
+  const ext = name.split(".").pop()?.toLowerCase() ?? "";
+  return IMAGE_MIME_BY_EXT[ext] || "";
+};
 
 const ChatEmptyState = () => (
   <div className="w-full animate-in flex flex-col justify-center min-h-[50vh] text-center">
@@ -209,17 +226,39 @@ function App() {
     { id: "memory", label: "Memória L2" },
   ];
 
+  const dedupeModelsById = (entries: ModelCatalogEntry[]) => {
+    const seen = new Set<string>();
+    return entries.filter((entry) => {
+      const id = entry?.id?.trim();
+      if (!id) return false;
+      if (seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    });
+  };
+
   const formatModelLabel = (entry: ModelCatalogEntry) =>
     entry.id.split("/").pop()?.toUpperCase().replace(/-/g, " ") || entry.id;
 
-  const modelOptions = [
+  const dedupeModelOptionsById = (options: { id: string; label: string }[]) => {
+    const seen = new Set<string>();
+    return options.filter((option) => {
+      const id = option?.id?.trim();
+      if (!id) return false;
+      if (seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    });
+  };
+
+  const modelOptions = dedupeModelOptionsById([
     { id: AUTO_MODEL_ID, label: "Auto (Recomendado)" },
     { id: DEFAULT_MODEL_ID, label: "Default Recomendado" },
     ...models.map((entry) => ({
-      id: entry.id,
+      id: entry.id?.trim() || entry.id,
       label: formatModelLabel(entry),
     })),
-  ];
+  ]);
 
   const getViewButtonClass = (viewId: View) => {
     const base =
@@ -241,7 +280,8 @@ function App() {
 
   useEffect(() => {
     api.getModels().then((data) => {
-      setModels(Array.isArray(data.models) ? data.models : []);
+      const list = Array.isArray(data.models) ? data.models : [];
+      setModels(dedupeModelsById(list));
     });
 
     // Busca sessões reais do banco de dados
@@ -347,8 +387,9 @@ function App() {
   };
 
   const buildAttachmentFromFile = (file: File) => {
-    const mimeType = file.type || "application/octet-stream";
-    const isImage = mimeType.startsWith("image/");
+    const fallbackMimeType = inferImageMimeType(file.name);
+    const mimeType = file.type || fallbackMimeType || "application/octet-stream";
+    const isImage = mimeType.startsWith("image/") || Boolean(fallbackMimeType);
     const isAudio = mimeType.startsWith("audio/");
     return {
       id: `${file.name}-${file.size}-${file.lastModified}-${Math.random()
