@@ -129,7 +129,7 @@ app.post('/api/chat/stream', async (req, res) => {
                 if (!firstTokenReceived) {
                     clearTimeout(streamTimeout);
                     const ttft = Date.now() - startTime;
-                    logger.info(`[PERF] TTFT: ${ttft}ms (${modelId})`);
+                    logger.debug(`[PERF] TTFT: ${ttft}ms (${modelId})`);
                     trace.latencyMs.ttft = ttft;
                     firstTokenReceived = true;
                 }
@@ -144,7 +144,20 @@ app.post('/api/chat/stream', async (req, res) => {
             clearTimeout(streamTimeout);
             throw streamErr;
         } finally {
-            logger.info(`[ROUTER_TRACE] ${JSON.stringify(trace)}`);
+            trace.latencyMs.total = trace.latencyMs.total || (Date.now() - startTime);
+            const summary = {
+                traceId: trace.traceId,
+                reason: trace.routerReason,
+                model: trace.selectedModel,
+                tags: trace.routingTags,
+                used: trace.usedModels,
+                ttft: trace.latencyMs.ttft,
+                total: trace.latencyMs.total
+            };
+            logger.info(`[ROUTER_TRACE] ${JSON.stringify(summary)}`);
+            if (process.env.ROUTER_TRACE_VERBOSE === 'true') {
+                logger.debug(`[ROUTER_TRACE_FULL] ${JSON.stringify(trace)}`);
+            }
             res.end();
         }
     } catch (err) {

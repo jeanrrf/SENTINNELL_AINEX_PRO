@@ -35,6 +35,7 @@ module.exports = {
         enableMultimodal: process.env.ROUTER_ENABLE_MULTIMODAL === 'true',
         enableAsr: process.env.ROUTER_ENABLE_ASR !== 'false',
         enableDocParse: process.env.ROUTER_ENABLE_DOC_PARSE !== 'false',
+        forceVisionModel: process.env.ROUTER_FORCE_VISION_MODEL !== 'false',
         asrProvider: process.env.ROUTER_ASR_PROVIDER || 'riva',
         modelsCacheTtlMs: parseInt(process.env.NVIDIA_MODELS_CACHE_TTL_MS || '600000', 10),
         maxRetries: parseInt(process.env.NVIDIA_ROUTER_MAX_RETRIES || '3', 10),
@@ -83,3 +84,4 @@ module.exports = {
         origin: '*' // Simplificado para uso pessoal
     }
 };
+

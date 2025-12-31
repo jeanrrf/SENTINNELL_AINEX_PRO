@@ -97,6 +97,18 @@ function resolveModelId(preferred, catalog, predicate) {
     return null;
 }
 
+function resolveModelIdStrict(preferred, catalog, predicate) {
+    if (preferred && catalog.byId.has(preferred)) {
+        const caps = catalog.byId.get(preferred);
+        if (!predicate || predicate(caps)) return preferred;
+    }
+    if (predicate) {
+        const candidate = catalog.models.find(model => predicate(model));
+        if (candidate) return candidate.id;
+    }
+    return null;
+}
+
 function isRetryableError(error) {
     const status = error?.status || error?.response?.status || error?.error?.status;
     if (!status) return false;
@@ -168,7 +180,7 @@ async function runDocParse(text, modelId) {
     return response?.choices?.[0]?.message?.content?.trim() || '';
 }
 
-async function buildAttachmentContext({ attachments, catalog, extraParts = [] }) {
+async function buildAttachmentContext({ attachments, catalog, extraParts = [], baseChatModel = null }) {
     const audio = attachments.filter(isAudioAttachment);
     const documents = attachments.filter(att => isDocumentAttachment(att) && att.data);
 
@@ -197,16 +209,29 @@ async function buildAttachmentContext({ attachments, catalog, extraParts = [] })
         }
 
         const docModel = config.router.enableDocParse
-            ? resolveModelId(config.router.docParseModelId, catalog, model => model.isParse)
+            ? (!registry.isDeniedModel(baseChatModel) && baseChatModel
+                ? baseChatModel
+                : !registry.isDeniedModel(config.router.defaultTextModel)
+                    ? config.router.defaultTextModel
+                    : resolveModelIdStrict(
+                        config.router.defaultTextModel,
+                        catalog,
+                        model => model.isChat && !registry.isDeniedModel(model.id)
+                    ))
             : null;
 
         if (docModel) {
             usedModels.docParse = docModel;
+            let parseFailed = false;
             for (const doc of parsedDocs) {
                 if (!doc.text) {
                     if (doc.error) {
                         contextParts.push(`DOC_ERROR:${doc.name}\n${doc.error}`);
                     }
+                    continue;
+                }
+                if (parseFailed) {
+                    contextParts.push(`DOC_TEXT:${doc.name}\n${doc.text}`);
                     continue;
                 }
                 let parsed = '';
@@ -216,6 +241,8 @@ async function buildAttachmentContext({ attachments, catalog, extraParts = [] })
                     logger.warn(
                         `Falha ao parsear documento "${doc.name}" com ${docModel}: ${error.message || error}`
                     );
+                    usedModels.docParseError = error?.message || 'doc_parse_failed';
+                    parseFailed = true;
                 }
                 if (parsed) {
                     contextParts.push(`DOC_PARSE:${doc.name}\n${truncateText(parsed, MAX_DOC_CHARS)}`);
@@ -387,7 +414,14 @@ async function routeTurn({ messages = [], model, attachments = [] }) {
             entry => entry.supportsVision
         );
 
-        if (chatCaps?.supportsVision) {
+        if (config.router.forceVisionModel && config.router.visionModelId) {
+            const forcedVision = config.router.visionModelId;
+            usedModels.vision = forcedVision;
+            chatModel = forcedVision;
+            preparedMessages = attachImagesToMessages(preparedMessages, images);
+            routerReason = 'forced_vision';
+            requiresVision = true;
+        } else if (chatCaps?.supportsVision) {
             usedModels.vision = chatModel;
             preparedMessages = attachImagesToMessages(preparedMessages, images);
             routerReason = choice.mode === 'manual' ? 'manual_vision' : 'auto_vision';
@@ -418,10 +452,15 @@ async function routeTurn({ messages = [], model, attachments = [] }) {
     }
 
     const fallbackModels = pickFallbackModels(catalog, chatModel, { requiresVision });
+    if (images.length) {
+        extraParts.push(`IMAGE_CONTEXT: ${images.length} image(s) attached. Use them to answer the user question.`);
+    }
+
     const { contextMessage, usedModels: contextUsed } = await buildAttachmentContext({
         attachments: safeAttachments,
         catalog,
-        extraParts
+        extraParts,
+        baseChatModel: chatModel
     });
 
     const combinedUsedModels = { ...usedModels, ...contextUsed };
@@ -452,6 +491,7 @@ async function routeTurn({ messages = [], model, attachments = [] }) {
         fallbackChain: fallbackModels,
         usedModels: combinedUsedModels,
         audioAttachments: safeAttachments.filter(isAudioAttachment).length,
+        imageAttachments: images.length,
         documentAttachments: safeAttachments.filter(att => isDocumentAttachment(att) && att.data).length,
         asrProvider: config.router.enableAsr ? config.router.asrProvider || 'riva' : 'disabled',
         timestamp: Date.now()
@@ -473,3 +513,4 @@ module.exports = {
     routeTurn,
     createChatStream
 };
+

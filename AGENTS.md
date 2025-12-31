@@ -75,3 +75,4 @@
 ## Como o Agent deve responder
 - Toda afirmação sobre o projeto deve citar **onde foi visto** (arquivo/pasta). Se não viu, declarar “hipótese” e indicar exatamente onde checar.
 - Sempre terminar com um próximo passo verificável (ex.: “confirme X em Y antes de alterar Z”).
+

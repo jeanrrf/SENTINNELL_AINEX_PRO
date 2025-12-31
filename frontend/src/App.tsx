@@ -262,20 +262,20 @@ function App() {
 
   const getViewButtonClass = (viewId: View) => {
     const base =
-      "px-5 py-2 text-xs font-black uppercase tracking-widest rounded-lg transition-all";
+      "px-5 py-2 text-[11px] font-black uppercase tracking-[0.2em] rounded-xl transition-all";
 
     if (currentView === viewId) {
       const activeText =
         viewId === "chat"
           ? "text-primary"
           : viewId === "olive"
-            ? "text-emerald-300"
-            : "text-accent";
+            ? "text-accent"
+            : "text-emerald-200";
 
-      return `${base} bg-white/10 ${activeText} shadow-sm`;
+      return `${base} bg-emerald-500/10 ${activeText} shadow-[0_0_12px_rgba(69,255,135,0.2)] border border-emerald-500/20`;
     }
 
-    return `${base} text-slate-500 hover:text-slate-300`;
+    return `${base} text-slate-400 hover:text-emerald-100 hover:bg-white/5`;
   };
 
   useEffect(() => {
@@ -541,11 +541,6 @@ function App() {
     ).filter(Boolean) as ChatAttachmentPayload[];
 
     const isUsingPending = !override?.attachments;
-    if (isUsingPending) {
-      pendingAttachments.forEach((att) => {
-        if (att.previewUrl) URL.revokeObjectURL(att.previewUrl);
-      });
-    }
 
     setMessages((prev) => [...prev, userMsg]);
 
@@ -675,7 +670,7 @@ function App() {
   const oliveContext = messages;
 
   return (
-    <div className="flex h-screen w-full bg-surface overflow-hidden text-slate-100 font-sans selection:bg-primary/30">
+    <div className="flex h-screen w-full bg-transparent overflow-hidden text-slate-100 font-sans selection:bg-primary/30">
       <Sidebar
         sessions={sessions}
         activeSession={activeSession}
@@ -686,16 +681,16 @@ function App() {
 
       {/* Main Content */}
 
-      <div className="flex-1 flex flex-col relative overflow-hidden bg-linear-to-br from-surface to-slate-900/50">
+      <div className="flex-1 flex flex-col relative overflow-hidden bg-linear-to-br from-[#07110c]/70 via-[#0a1319]/60 to-[#050b0e]/80">
         {/* Header */}
 
-        <header className="h-20 glass border-b border-white/5 flex items-center justify-between px-10 z-30 transition-all duration-300">
+        <header className="h-20 glass border-b border-emerald-500/10 flex items-center justify-between px-10 z-30 transition-all duration-300">
           <div className="flex items-center gap-8">
             <div className="md:hidden text-xl font-black font-display tracking-tighter">
               SENTINNELL<span className="text-primary">PRO</span>
             </div>
 
-            <nav className="flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/5">
+            <nav className="flex items-center gap-1 bg-black/30 p-1 rounded-xl border border-emerald-500/15">
               {viewOptions.map((view) => (
                 <button
                   key={view.id}
@@ -711,7 +706,7 @@ function App() {
           <div className="flex items-center gap-6">
             <button
               onClick={() => setShowVortexModal(true)}
-              className="group flex items-center gap-3 px-4 py-2 rounded-xl bg-red-500/5 border border-red-500/10 hover:bg-red-500/10 hover:border-red-500/20 transition-all"
+              className="group flex items-center gap-3 px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/20 hover:bg-red-500/15 hover:border-red-500/30 transition-all"
             >
               <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse ring-4 ring-red-500/20"></div>
 
@@ -720,17 +715,17 @@ function App() {
               </span>
             </button>
 
-            <div className="h-8 w-px bg-white/5"></div>
+            <div className="h-8 w-px bg-emerald-500/10"></div>
 
             <div className="flex items-center gap-3">
-              <div className="text-[10px] text-slate-500 font-black uppercase tracking-widest opacity-50">
+              <div className="text-[10px] text-emerald-200/60 font-black uppercase tracking-widest opacity-70">
                 Kernel:
               </div>
 
               <select
                 value={selectedModel}
                 onChange={(e) => setSelectedModel(e.target.value)}
-                className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-xs font-bold font-display outline-none focus:border-primary/50 transition-all cursor-pointer hover:bg-white/10 appearance-none min-w-35"
+                className="bg-black/40 border border-emerald-500/20 rounded-xl px-4 py-2 text-xs font-bold font-display outline-none focus:border-primary/50 transition-all cursor-pointer hover:bg-white/5 appearance-none min-w-35"
               >
                 {modelOptions.map((option) => (
                   <option
@@ -765,6 +760,7 @@ function App() {
                     isLast={i === messages.length - 1}
                     model={msg.model}
                     attachments={msg.attachments}
+                    modelInfo={msg.modelInfo}
                   />
                 ))}
               </div>
@@ -774,16 +770,16 @@ function App() {
 
             <footer className="p-10 z-30 relative py-12">
               <div className="max-w-300 2xl:max-w-375 mx-auto relative group">
-                <div className="absolute -inset-1 bg-linear-to-r from-primary/50 to-accent/50 rounded-4xl opacity-0 group-focus-within:opacity-30 blur-2xl transition-all duration-500"></div>
+                <div className="absolute -inset-1 bg-linear-to-r from-primary/40 to-accent/30 rounded-4xl opacity-0 group-focus-within:opacity-40 blur-2xl transition-all duration-500"></div>
 
-                <div className="relative bg-slate-800/80 border border-white/10 shadow-2xl rounded-3xl p-3 flex items-end gap-3 backdrop-blur-2xl ring-1 ring-white/5">
+                <div className="relative bg-black/45 border border-emerald-500/20 shadow-2xl rounded-3xl p-3 flex items-end gap-3 backdrop-blur-2xl ring-1 ring-emerald-500/10">
                   <div className="flex-1">
                     {pendingAttachments.length > 0 && (
                       <div className="mb-3 flex flex-wrap gap-2">
                         {pendingAttachments.map((att) => (
                           <div
                             key={att.id}
-                            className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-white/5 border border-white/10 text-xs text-slate-200"
+                            className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-100"
                           >
                             <span className="truncate max-w-35">
                               {att.name}
@@ -828,7 +824,7 @@ function App() {
                       }
                       onPaste={handlePaste}
                       placeholder="Qual o próximo nível de evolução para o projeto hoje?"
-                      className="w-full bg-transparent border-none p-5 pb-5 pr-16 outline-none resize-none h-16 min-h-16 max-h-48 text-[15px] leading-relaxed font-sans placeholder:text-slate-400 text-white selection:bg-primary"
+                      className="w-full bg-transparent border-none p-5 pb-5 pr-16 outline-none resize-none h-16 min-h-16 max-h-48 text-[15px] leading-relaxed font-sans placeholder:text-emerald-200/60 text-white selection:bg-primary"
                     />
                   </div>
 
